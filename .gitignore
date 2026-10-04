@@ -1,0 +1,12 @@
+# Sistema
+.DS_Store
+
+# Saída do build (gerada com npm run build)
+dist/
+qa/
+
+# Arquivos de trabalho que não vão para o repositório público
+_originais/
+/*.png
+/*.pdf
+/*.docx

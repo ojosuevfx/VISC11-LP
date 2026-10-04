@@ -1,0 +1,11 @@
+{
+  "name": "vinci-compass-visc11",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Landing page VISC11 — Vinci Compass",
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
+    "build": "node scripts/build.mjs"
+  }
+}
