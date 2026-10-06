@@ -1,4 +1,26 @@
 'use strict';
+// URL do PDF do relatório (botão da Dobra 8). Trocar pelo endereço definitivo do PDF hospedado.
+const REPORT_PDF_URL = '[INSERIR URL DO PDF HOSPEDADO]';
+const reportLink = document.querySelector('[data-report-link]');
+const reportReady = /^https?:\/\//.test(REPORT_PDF_URL);
+if (reportReady) reportLink.href = REPORT_PDF_URL;
+else console.warn('VISC11: defina REPORT_PDF_URL em app.js com o endereço do PDF do relatório.');
+
+// Eventos dos CTAs (data-cta). O projeto ainda não tem plataforma de analytics:
+// os eventos entram na fila window.dataLayer (lida pelo Google Tag Manager/GA4 quando instalado)
+// e também são disparados como CustomEvent 'visc11:cta' no document.
+let lastCta = null;
+document.addEventListener('click', event => {
+  const cta = event.target.closest('[data-cta]');
+  if (!cta) return;
+  const name = cta.dataset.cta;
+  const detail = name === 'abrir_relatorio' ? { dobra: 8, cta_origem: lastCta || 'acesso_direto' } : { dobra: Number(name.replace('cta_dobra_', '')) };
+  if (name !== 'abrir_relatorio') lastCta = name;
+  (window.dataLayer = window.dataLayer || []).push({ event: name, ...detail });
+  document.dispatchEvent(new CustomEvent('visc11:cta', { detail: { event: name, ...detail } }));
+  if (cta === reportLink && !reportReady) event.preventDefault();
+});
+
 const menuButton = document.querySelector('.menu-toggle');
 const mobileNav = document.querySelector('#mobile-nav');
 function closeMenu() {
@@ -31,7 +53,8 @@ document.addEventListener('click', event => {
   const target = link && lenis && document.querySelector(link.getAttribute('href'));
   if (!target) return;
   event.preventDefault();
-  lenis.scrollTo(target);
+  // Reajusta ao final caso imagens lazy carreguem no caminho e desloquem o destino.
+  lenis.scrollTo(target, { onComplete: () => lenis.scrollTo(target) });
   history.pushState(null, '', link.hash);
 });
 function scrollGallery(direction) {
