@@ -1,10 +1,18 @@
 'use strict';
-// URL do PDF do relatório (botão da Dobra 8). Trocar pelo endereço definitivo do PDF hospedado.
-const REPORT_PDF_URL = '[INSERIR URL DO PDF HOSPEDADO]';
+// Relatório (Dobra 8): as páginas do PDF são publicadas como imagens e exibidas num visualizador
+// dentro da página, sem link para o arquivo PDF, para que seja só leitura online.
 const reportLink = document.querySelector('[data-report-link]');
-const reportReady = /^https?:\/\//.test(REPORT_PDF_URL);
-if (reportReady) reportLink.href = REPORT_PDF_URL;
-else console.warn('VISC11: defina REPORT_PDF_URL em app.js com o endereço do PDF do relatório.');
+const reportViewer = document.querySelector('#report-viewer');
+reportLink.addEventListener('click', () => {
+  reportViewer.showModal();
+  reportViewer.querySelector('.report-viewer-pages').scrollTop = 0;
+  lenis?.stop();
+});
+reportViewer.querySelector('[data-report-close]').addEventListener('click', () => reportViewer.close());
+reportViewer.addEventListener('click', event => { if (event.target === reportViewer) reportViewer.close(); });
+reportViewer.addEventListener('close', () => lenis?.start());
+reportViewer.addEventListener('contextmenu', event => event.preventDefault());
+reportViewer.addEventListener('dragstart', event => event.preventDefault());
 
 // Eventos dos CTAs (data-cta). O projeto ainda não tem plataforma de analytics:
 // os eventos entram na fila window.dataLayer (lida pelo Google Tag Manager/GA4 quando instalado)
@@ -18,7 +26,6 @@ document.addEventListener('click', event => {
   if (name !== 'abrir_relatorio') lastCta = name;
   (window.dataLayer = window.dataLayer || []).push({ event: name, ...detail });
   document.dispatchEvent(new CustomEvent('visc11:cta', { detail: { event: name, ...detail } }));
-  if (cta === reportLink && !reportReady) event.preventDefault();
 });
 
 const menuButton = document.querySelector('.menu-toggle');
