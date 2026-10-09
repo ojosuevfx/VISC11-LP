@@ -1,18 +1,84 @@
 'use strict';
-// Relatório (Dobra 8): as páginas do PDF são publicadas como imagens e exibidas num visualizador
-// dentro da página, sem link para o arquivo PDF, para que seja só leitura online.
-const reportLink = document.querySelector('[data-report-link]');
-const reportViewer = document.querySelector('#report-viewer');
-reportLink.addEventListener('click', () => {
-  reportViewer.showModal();
-  reportViewer.querySelector('.report-viewer-pages').scrollTop = 0;
-  lenis?.stop();
+// Gate local: as respostas são validadas e descartadas, sem armazenamento ou envio externo.
+const leadDialog = document.querySelector('#lead-dialog');
+const leadForm = document.querySelector('#lead-form');
+const leadError = document.querySelector('#lead-error');
+let reportUnlocked = false;
+let reportTrigger = null;
+let reportScrollY = 0;
+function downloadReport() {
+  if (!reportUnlocked) return;
+  const link = document.createElement('a');
+  link.href = 'assets/relatorio/analise-visc11.pdf';
+  link.download = 'Analise-VISC11-Eleven.pdf';
+  document.body.append(link);
+  link.click();
+  link.remove();
+}
+document.querySelectorAll('.report-link, [data-report-link]').forEach(trigger => {
+  trigger.addEventListener('click', event => {
+    event.preventDefault();
+    reportTrigger = trigger;
+    reportScrollY = window.scrollY;
+    closeMenu();
+    if (reportUnlocked) { downloadReport(); return; }
+    leadError.hidden = true;
+    leadDialog.showModal();
+    leadDialog.scrollTop = 0;
+    lenis?.stop();
+    leadForm.querySelector('input').focus({ preventScroll: true });
+    window.scrollTo({ top: reportScrollY, behavior: 'instant' });
+  });
 });
-reportViewer.querySelector('[data-report-close]').addEventListener('click', () => reportViewer.close());
-reportViewer.addEventListener('click', event => { if (event.target === reportViewer) reportViewer.close(); });
-reportViewer.addEventListener('close', () => lenis?.start());
-reportViewer.addEventListener('contextmenu', event => event.preventDefault());
-reportViewer.addEventListener('dragstart', event => event.preventDefault());
+leadDialog.querySelector('.lead-close').addEventListener('click', () => leadDialog.close());
+for (const dialog of [leadDialog]) {
+  dialog.addEventListener('click', event => {
+    const rect = dialog.getBoundingClientRect();
+    if (event.target === dialog && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) dialog.close();
+  });
+  dialog.addEventListener('close', () => {
+    if (!leadDialog.open) {
+      lenis?.start();
+      reportTrigger?.focus({ preventScroll: true });
+      window.scrollTo({ top: reportScrollY, behavior: 'instant' });
+    }
+  });
+}
+leadForm.querySelector('input[type="tel"]').addEventListener('input', event => {
+  let digits = event.target.value.replace(/\D/g, '');
+  if (digits.startsWith('55') && digits.length > 11) digits = digits.slice(2);
+  digits = digits.slice(0, 11);
+  event.target.value = digits.length > 7
+    ? `(${digits.slice(0, 2)}) ${digits.slice(2, -4)}-${digits.slice(-4)}`
+    : digits.length > 2 ? `(${digits.slice(0, 2)}) ${digits.slice(2)}` : digits;
+});
+leadForm.addEventListener('submit', event => {
+  event.preventDefault();
+  const field = name => leadForm.elements[`form_fields[${name}]`];
+  const checks = [
+    ['suno_FirstName', value => !!value.trim(), 'Informe seu nome.'],
+    ['suno_Email', value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim()), 'Informe um e-mail válido.'],
+    ['suno_Phone', value => /^\d{10,11}$/.test(value.replace(/\D/g, '')), 'Informe um telefone válido com DDD.'],
+    ['suno_Aporte', value => !!value, 'Selecione quanto pretende aportar.'],
+    ['suno_Patrimonio', value => !!value, 'Selecione seu patrimônio investido.'],
+  ];
+  leadForm.querySelectorAll('[aria-invalid]').forEach(el => { el.removeAttribute('aria-invalid'); el.removeAttribute('aria-describedby'); });
+  for (const [name, valid, message] of checks) {
+    const input = field(name);
+    if (valid(input.value)) continue;
+    leadError.textContent = message;
+    leadError.hidden = false;
+    input.setAttribute('aria-invalid', 'true');
+    input.setAttribute('aria-describedby', 'lead-error');
+    input.focus();
+    return;
+  }
+  reportUnlocked = true;
+  leadError.hidden = true;
+  leadForm.reset();
+  leadDialog.close();
+  downloadReport();
+});
 
 // Eventos dos CTAs (data-cta). O projeto ainda não tem plataforma de analytics:
 // os eventos entram na fila window.dataLayer (lida pelo Google Tag Manager/GA4 quando instalado)
@@ -56,6 +122,7 @@ const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
 
 const lenis = !motionQuery.matches && window.Lenis ? new Lenis({ lerp: 0.1, autoRaf: true }) : null;
 document.addEventListener('click', event => {
+  if (event.defaultPrevented) return;
   const link = event.target.closest('a[href^="#"]:not(.skip-link)');
   const target = link && lenis && document.querySelector(link.getAttribute('href'));
   if (!target) return;
