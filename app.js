@@ -1,46 +1,49 @@
 'use strict';
 // Gate local: as respostas são validadas e descartadas, sem armazenamento ou envio externo.
-const reportViewer = document.querySelector('#report-viewer');
 const leadDialog = document.querySelector('#lead-dialog');
 const leadForm = document.querySelector('#lead-form');
 const leadError = document.querySelector('#lead-error');
 let reportUnlocked = false;
 let reportTrigger = null;
-function openReport() {
+let reportScrollY = 0;
+function downloadReport() {
   if (!reportUnlocked) return;
-  reportViewer.showModal();
-  reportViewer.querySelector('.report-viewer-pages').scrollTop = 0;
-  lenis?.stop();
+  const link = document.createElement('a');
+  link.href = 'assets/relatorio/analise-visc11.pdf';
+  link.download = 'Analise-VISC11-Eleven.pdf';
+  document.body.append(link);
+  link.click();
+  link.remove();
 }
 document.querySelectorAll('.report-link, [data-report-link]').forEach(trigger => {
   trigger.addEventListener('click', event => {
     event.preventDefault();
     reportTrigger = trigger;
+    reportScrollY = window.scrollY;
     closeMenu();
-    if (reportUnlocked) { openReport(); return; }
+    if (reportUnlocked) { downloadReport(); return; }
     leadError.hidden = true;
     leadDialog.showModal();
     leadDialog.scrollTop = 0;
     lenis?.stop();
     leadForm.querySelector('input').focus({ preventScroll: true });
+    window.scrollTo({ top: reportScrollY, behavior: 'instant' });
   });
 });
 leadDialog.querySelector('.lead-close').addEventListener('click', () => leadDialog.close());
-for (const dialog of [leadDialog, reportViewer]) {
+for (const dialog of [leadDialog]) {
   dialog.addEventListener('click', event => {
     const rect = dialog.getBoundingClientRect();
     if (event.target === dialog && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) dialog.close();
   });
   dialog.addEventListener('close', () => {
-    if (!leadDialog.open && !reportViewer.open) {
+    if (!leadDialog.open) {
       lenis?.start();
       reportTrigger?.focus({ preventScroll: true });
+      window.scrollTo({ top: reportScrollY, behavior: 'instant' });
     }
   });
 }
-reportViewer.querySelector('[data-report-close]').addEventListener('click', () => reportViewer.close());
-reportViewer.addEventListener('contextmenu', event => event.preventDefault());
-reportViewer.addEventListener('dragstart', event => event.preventDefault());
 leadForm.querySelector('input[type="tel"]').addEventListener('input', event => {
   let digits = event.target.value.replace(/\D/g, '');
   if (digits.startsWith('55') && digits.length > 11) digits = digits.slice(2);
@@ -74,7 +77,7 @@ leadForm.addEventListener('submit', event => {
   leadError.hidden = true;
   leadForm.reset();
   leadDialog.close();
-  openReport();
+  downloadReport();
 });
 
 // Eventos dos CTAs (data-cta). O projeto ainda não tem plataforma de analytics:
