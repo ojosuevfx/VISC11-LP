@@ -41,3 +41,7 @@
 html:has(#lead-dialog[open]) { overflow:hidden; }
 
 button.report-link, .fund-nav, .menu-cta { border:0; }
+
+/* Evita o menu de imagem ao manter o toque, preservando rolagem e zoom. */
+.hero-visual,.hero-visual picture,.hero-photo{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.hero-photo{-webkit-user-drag:none;pointer-events:none}

@@ -1,4 +1,9 @@
 'use strict';
+// Bloqueia o menu nativo e o arraste apenas na imagem da hero.
+const heroVisual = document.querySelector('.hero-visual');
+for (const eventName of ['contextmenu', 'dragstart']) {
+  heroVisual?.addEventListener(eventName, event => event.preventDefault());
+}
 // Gate local: as respostas são validadas e descartadas, sem armazenamento ou envio externo.
 const leadDialog = document.querySelector('#lead-dialog');
 const leadForm = document.querySelector('#lead-form');
